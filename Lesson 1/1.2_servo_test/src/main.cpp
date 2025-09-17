@@ -7,6 +7,16 @@
  * - The MG90S servo motors have a range of 0° to 180° - the range of motion must be declared in the attach() function as microsecond values to get the full range.
  * - Test 1 servo motor at a time on pin D4.
  * 
+ * SERVO PIN REFERENCE:
+ * - PIN D0  = GPIO16
+ * - PIN D1  = GPIO5
+ * - PIN D2  = GPIO4
+ * - PIN D4  = GPIO2
+ * - PIN D5  = GPIO14
+ * - PIN D6  = GPIO12
+ * - PIN D7  = GPIO13
+ * - PIN D8  = GPIO15
+ * 
  * !!IMPORTANT!!
  * - Servo motors should NOT be installed to a load while testing as this may damage the motor.
  * - Turn OFF the board before connecting or disconnecting a servo motor.
@@ -73,3 +83,4 @@ void loop() {
  * 
  * - The same process is repeated for the second for loop, but in reverse (-=1) - moving the servo from 180 degrees to 0 degrees in small 1 degree increments every 15ms.
  */
+
