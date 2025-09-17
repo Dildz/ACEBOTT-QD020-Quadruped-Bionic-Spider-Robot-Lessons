@@ -35,7 +35,7 @@
  */
 
 
-// Imports
+// INCLUDES
 #include <Arduino.h>
 #include <Servo.h>
 
