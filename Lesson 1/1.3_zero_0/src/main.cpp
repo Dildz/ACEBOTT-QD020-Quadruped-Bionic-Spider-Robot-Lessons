@@ -50,15 +50,15 @@ void zero() {   // Zeroing function for the main loop (calibrated values)
 
 // SETUP
 void setup(){
-  // Initialize the GPIO pin numbers & the range of motion of each servo (500 = 0°, 2500 = 180°)
-  servoD5_URP.attach(14, 500, 2500);
-  servoD6_URA.attach(12, 500, 2500);
-  servoD7_LRA.attach(13, 500, 2500);
-  servoD8_LRP.attach(15, 500, 2500);
-  servoD0_ULP.attach(16, 500, 2500);
-  servoD1_ULA.attach(5, 500, 2500);
-  servoD2_LLA.attach(4, 500, 2500);
-  servoD4_LLP.attach(2, 500, 2500);
+  // Initialize the GPIO & the range of motion of each servo (500 = 0°, 2500 = 180°)
+  servoD5_URP.attach(D5, 500, 2500);
+  servoD6_URA.attach(D6, 500, 2500);
+  servoD7_LRA.attach(D7, 500, 2500);
+  servoD8_LRP.attach(D8, 500, 2500);
+  servoD0_ULP.attach(D0, 500, 2500);
+  servoD1_ULA.attach(D1, 500, 2500);
+  servoD2_LLA.attach(D2, 500, 2500);
+  servoD4_LLP.attach(D4, 500, 2500);
 
   Serial.println("\nSetup completed\n");
 }
