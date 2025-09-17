@@ -16,7 +16,6 @@
  * - PIN D7  = GPIO13
  * - PIN D8  = GPIO15
  * 
- * 
  *   -----                -----
  *  | ULP |              | URP |
  *  | D0  |              | D5  |
