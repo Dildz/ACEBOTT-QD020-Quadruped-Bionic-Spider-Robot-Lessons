@@ -93,14 +93,14 @@ void writeServoPositions(const int positions[][9], int rowCount) {    // Write s
 }
 
 void forward() {    // Forward function
-  if (!firstIteration) {
+  if (!firstIteration) {    // if false
     // Run through all steps for the first iteration (steps 1–6)
     for (int i = 0; i < 6; i++) {   // start at 0 (1st step), go up to 5 (less than 6 - last step)
       writeServoPositions(forwardArray + i, 1);   // pass the specific row (step)
     }
     firstIteration = true;   // set the first iteration flag
   }
-  else {
+  else {    // if ture
     // Run only steps 3–6 for subsequent iterations
     for (int i = 2; i < 6; i++) {   // start at 2 (3rd step), go up to 5 (less than 6 - last step)
       writeServoPositions(forwardArray + i, 1);   // pass the specific row (step)
