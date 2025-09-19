@@ -125,7 +125,6 @@ void loop() {
  * LESSONS LEARNED:
  * - The Servo library is used to control servo motors.
  * - Declaring the servo motors as global variables makes it easier to use elsewhere in the code.
- * - Making use of flags to only run parts of a function.
  * 
  * ARRAY:
  * - standbyArray and readyArray have 1 row and 9 columns
