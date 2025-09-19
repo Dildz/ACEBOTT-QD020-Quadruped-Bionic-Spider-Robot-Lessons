@@ -112,7 +112,7 @@ void setup(){
 
 // MAIN LOOP
 void loop() {
-  moveLeft();    // call the forward function
+  moveLeft();    // call the move left function
   delay(1000);
 }
 
