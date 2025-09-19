@@ -49,8 +49,6 @@ Servo servoD1_ULA;    // upper left arm
 Servo servoD2_LLA;    // lower left arm
 Servo servoD4_LLP;    // lower left paw
 
-bool firstIteration = false;    // first iteration flag
-
 // Define the standby postions array, we can modify values from the zero positions
 const int standbyArray[1][9] = {    // 1 arrays with 9 columns (0 to 8)
 // URP---URA---LRA---LRP---ULP---ULA---LLA---LLP---MS
