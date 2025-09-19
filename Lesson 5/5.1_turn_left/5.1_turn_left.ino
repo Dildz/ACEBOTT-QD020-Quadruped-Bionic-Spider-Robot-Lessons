@@ -1,0 +1,55 @@
+#include <Servo.h>
+Servo servo_14;//Upper right [paw]
+Servo servo_12;//Upper right [arm]
+Servo servo_13;//Lower right [arm]
+Servo servo_15;//Lower right [paw]
+Servo servo_16;//Upper left [paw]
+Servo servo_5;//Upper left [arm]
+Servo servo_4;//Lower left [arm]
+Servo servo_2;//Lower left [paw]
+
+
+//Create an array of turns to the left. By default, the robot rotates 22.5 degrees
+int array6[8][9] = {
+//G14  G12  G13  G15  G16  G5  G4  G2  MS 
+{70, 90, 90, 110, 110, 90, 90, 70, 200},//Ready for standby
+{90, 90, 90, 110, 110, 90, 90, 90, 200},//Right upper paw and left lower paw are raised
+{90, 135, 90, 110, 110, 90,135, 90, 200},//Right upper arm forward, left lower arm back
+{70, 135, 90, 110, 110, 90,135, 70, 200},//Right upper paw and left lower paw drop
+{70, 135, 90, 90, 90, 90, 135, 70, 200},//The left upper paw and right lower paw are raised
+{70, 135, 135, 90, 90, 135,135, 70, 200},//Put your upper left arm back and your lower right arm forward
+{70, 135, 135, 110, 110, 135,135, 70, 200},//Left upper paw and right lower paw drop
+{70, 90, 90, 110, 110, 90, 90, 70, 200},//Four arms rotation
+};
+//A function that sets the left turn
+void turnleft() {
+ for (int i = 0; i <= 7; i = i + 1) {
+  servo_14.write(array6[i][0]);
+  servo_12.write(array6[i][1]);
+  servo_13.write(array6[i][2]);
+  servo_15.write(array6[i][3]);
+  servo_16.write(array6[i][4]);
+  servo_5.write(array6[i][5]);
+  servo_4.write(array6[i][6]);
+  servo_2.write(array6[i][7]);
+  delay(array6[i][8]);
+ }
+}
+
+void setup(){
+  servo_14.attach(14);
+  servo_12.attach(12);
+  servo_13.attach(13);
+  servo_15.attach(15);
+  servo_16.attach(16);
+  servo_5.attach(5);
+  servo_4.attach(4);
+  servo_2.attach(2);
+}
+
+//Run the left turn 
+void loop() {
+  turnleft();
+}
+
+
