@@ -63,7 +63,7 @@ class MovementDriver {
     static const int backwardArray[8][9];
 
     // Lookup table for all sequences
-    static const MovementArray sequences[5]; // STANDBY, READY, FORWARD, BACKWARD, NONE
+    static const MovementArray sequences[5]; // STANDBY, READY, FORWARD, BACKWARD, IDLE
 
     // Movement state management
     MovementState lastState;
@@ -98,3 +98,4 @@ class MovementDriver {
 };
 
 #endif
+
