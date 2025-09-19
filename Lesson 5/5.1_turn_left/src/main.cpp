@@ -130,7 +130,7 @@ void loop() {
  * - standbyArray and readyArray have 1 row and 9 columns
  * - turnLeftArray has 9 rows and 9 columns
  * - Each column corresponds to a specific servo motor position with the last value being the delay time after movement completes.
- * - The values in the array have been calibrated to account for mechanical tolerances
+ * - The values in the array have been calibrated to account for mechanical tolerances.
  * 
  * FUNCTIONS:
  * - left() function uses the position array to move the limbs
