@@ -1,5 +1,5 @@
 /*
- * This sketch combines the robot's standby, ready, move forward and backward functions into one program.
+ * This sketch combines the robot's movement functions from previous lessons into one program.
  * We introduce the creation & use of a custom library and handle movements via a state machine.
  * 
  * Program flow:
