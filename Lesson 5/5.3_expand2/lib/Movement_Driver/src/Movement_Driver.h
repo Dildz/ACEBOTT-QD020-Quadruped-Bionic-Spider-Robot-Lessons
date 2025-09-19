@@ -2,7 +2,7 @@
  * Movement_Driver.h - Custom library for controlling quadruped robot movements
  * 
  * This library provides an interface for controlling the robot.
- * It defines movement patterns (standby, ready, forward, backward) as arrays of positions,
+ * It defines movement patterns as arrays of positions,
  * and manages them through a table-driven simple state machine.
  * 
  * NOTES:
@@ -105,3 +105,4 @@ class MovementDriver {
 };
 
 #endif
+
