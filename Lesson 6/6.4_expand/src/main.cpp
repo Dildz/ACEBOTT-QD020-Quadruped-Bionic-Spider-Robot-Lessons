@@ -5,7 +5,8 @@
  * Program flow:
  *   - Start in standby()
  *   - Transition to ready()
- *   - Then follow sequence: forward twice, turn left, turn right, backward twice, loop back to forward.
+ *   - Then follow sequence:
+       forward twice, turn left, turn right, backward twice, move left, move right, wave hello, loop back to forward.
  * 
  * All servo control logic and position arrays are in the Movement_Driver,
  * so the main sketch only controls movement transitions and can run other tasks.
