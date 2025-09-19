@@ -16,7 +16,7 @@
  * - The Servo.h include is moved into Movement_Driver.h, so the implementation file (Movement_Driver.cpp)
  *   can access it directly.
  * - The main sketch only needs to include Movement_Driver.h and call the high-level movement methods
- *   ( robot.standby(), (robot.ready(), robot.forward(), (robot.backward() ).
+ *   ( robot.standby(), robot.ready(), robot.forward(), robot.backward() ).
  * - For the idle state we can pass the period & queue the next state.
  */
 
