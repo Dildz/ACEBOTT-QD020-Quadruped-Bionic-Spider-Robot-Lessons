@@ -62,7 +62,7 @@ const int readyArray[1][9] = {    // 1 arrays with 9 columns (0 to 8)
 };
 
 // Dance3 movement positions array
-int dance3Array[16][9] = {   // there are 16 arrays with 9 columns (adjust the MS value to change the speed)
+const int dance3Array[16][9] = {   // there are 16 arrays with 9 columns (adjust the MS value to change the speed)
 // URP---URA---LRA---LRP---ULP---ULA---LLA---LLP---MS
   { 80,   92,   90,   80,   95,   85,   80,   82,   50},  // step 1 - lift LRP (-8)
   { 80,   92,    2,   88,   95,   85,   80,   82,  100},  // step 2 - move LRA (-88) back | drop LRP (+8)
