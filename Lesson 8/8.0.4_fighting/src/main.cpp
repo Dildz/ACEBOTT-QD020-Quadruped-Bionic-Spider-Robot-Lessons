@@ -62,17 +62,24 @@ const int readyArray[1][9] = {    // 1 arrays with 9 columns (0 to 8)
 };
 
 // Define a figting movement array
-const int fightArray[9][9] = {   // there are 9 arrays with 9 columns (adjust the MS value to change the speed)
+int fightArray[15][9] = {   // there are 15 arrays with 9 columns (adjust the MS value to change the speed)
 // URP---URA---LRA---LRP---ULP---ULA---LLA---LLP---MS
-  { 60,   92,   90,   78,   90,   85,   80,   92,  400},  // step 1 - drop URP (-30)
-  { 90,   92,   90,  108,   90,   85,   80,   92,  400},  // step 2 - lift URP & drop LRP (+30)
-  { 90,   92,   90,   78,   90,   85,   80,   62,  400},  // step 3 - lift LRP & drop LLP (-30)
-  { 90,   92,   90,   78,  120,   85,   80,   92,  400},  // step 4 - drop ULP & lift LLP (+30)
-  { 60,   92,   90,   78,   90,   85,   80,   92,  400},  // step 5 - lift ULP & drop URP (-30)
-  { 90,   92,   90,  108,   90,   85,   80,   92,  400},  // step 6 - lift URP & drop LRP (+30)
-  { 90,   92,   90,   78,   90,   85,   80,   62,  400},  // step 7 - lift LRP & drop LLP (-30)
-  { 90,   92,   90,   78,  120,   85,   80,   92,  400},  // step 8 - drop ULP & lift LLP (+30)
-  { 90,   92,   90,   78,   90,   85,   80,   92,  400},  // step 9 - lift ULP (+30)
+  { 70,  132,   50,   78,  105,   45,  120,   92,  500},  // step 1 - drop URP (-30) | drop ULP (+30)
+  { 70,  112,   30,   78,  105,   25,  100,   92,  300},  // step 2 - move URA & LRA back, ULA & LLA forward (-20)
+  { 70,  152,   70,   78,  105,   65,  140,   92,  300},  // step 3 - move URA & LRA forward, ULA & LLA back (+40)
+  { 70,  112,   30,   78,  105,   25,  100,   92,  300},  // step 4 - move URA & LRA back, ULA & LLA forward (-40)
+  { 70,  152,   70,   78,  105,   65,  140,   92,  300},  // step 5 - move URA & LRA forward, ULA & LLA back (+40)
+  { 70,  112,   30,   78,  105,   25,  100,   92,  300},  // step 6 - move URA & LRA back, ULA & LLA forward (-40)
+  { 70,  132,   50,   78,  105,   45,  120,   92,  500},  // step 7 - move URA & LRA forward, ULA & LLA back (+20)
+
+  {100,  132,   50,   98,   75,   45,  120,   72,  500},  // step 8 - lift URP (+30) | lift ULP (-30) | drop LRP (+20) | drop LLP (-20)
+  {100,  112,   30,   98,   75,   25,  100,   72,  300},  // step 9 - move URA & LRA back, ULA & LLA forward (-20)
+  {100,  152,   70,   98,   75,   65,  140,   72,  300},  // step 10 - move URA & LRA forward, ULA & LLA back (+40)
+  {100,  112,   30,   98,   75,   25,  100,   72,  300},  // step 11 - move URA & LRA back, ULA & LLA forward (-40)
+  {100,  152,   70,   98,   75,   65,  140,   72,  300},  // step 12 - move URA & LRA forward, ULA & LLA back (+40)
+  {100,  112,   30,   98,   75,   25,  100,   72,  300},  // step 13 - move URA & LRA back, ULA & LLA forward (-40)
+  {100,  132,   50,   98,   75,   45,  120,   72,  500},  // step 14 - move URA & LRA forward, ULA & LLA back (+20)  
+  {100,  132,   50,   78,   75,   45,  120,   92,  500},  // step 15 - lift LRP (-20) | lift LLP (+20)
 };
 
 
@@ -92,7 +99,7 @@ void writeServoPositions(const int positions[][9], int rowCount) {    // Write s
 }
 
 void fighting() {    // Fighting movement positions function
-  writeServoPositions(fightArray, 9);
+  writeServoPositions(fightArray, 15);
 }
 
 
@@ -128,7 +135,7 @@ void loop() {
  * 
  * ARRAY:
  * - standbyArray and readyArray have 1 row and 9 columns
- * - fightArray has 9 rows and 9 columns
+ * - fightArray has 15 rows and 9 columns
  * - Each column corresponds to a specific servo motor position with the last value being the delay time after movement completes.
  * - The values in the array have been calibrated to account for mechanical tolerances
  * 
