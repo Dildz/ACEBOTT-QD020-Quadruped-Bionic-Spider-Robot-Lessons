@@ -62,7 +62,7 @@ const int readyArray[1][9] = {    // 1 arrays with 9 columns (0 to 8)
 };
 
 // Define a figting movement array
-int fightArray[9][9] = {   // there are 9 arrays with 9 columns (adjust the MS value to change the speed)
+const int fightArray[9][9] = {   // there are 9 arrays with 9 columns (adjust the MS value to change the speed)
 // URP---URA---LRA---LRP---ULP---ULA---LLA---LLP---MS
   { 60,   92,   90,   78,   90,   85,   80,   92,  400},  // step 1 - drop URP (-30)
   { 90,   92,   90,  108,   90,   85,   80,   92,  400},  // step 2 - lift URP & drop LRP (+30)
