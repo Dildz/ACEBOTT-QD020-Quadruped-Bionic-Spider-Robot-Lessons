@@ -171,12 +171,17 @@ void parseReceivedData() {
 void setup() {
   Serial.begin(115200);
   delay(100);
+  Serial.println("\n=================================================================");
+  Serial.println("Starting ACEBOTT QD020 Quadruped Bionic Spider Robot App Control.");
+  Serial.println("=================================================================");
 
   // Initialize Wi-Fi
+  Serial.println("\nInitializing Wi-Fi...");
   WiFi.mode(WIFI_AP);           // Set Wi-Fi mode to access point mode
   WiFi.softAP(ssid,password,5); // Create a Wi-Fi access point with the network name and password, and use channel 5
   server.begin();               // Start the Wi-Fi server
   delay(100);
+  Serial.println("Wi-Fi ready, initializing movement driver...");
 
   // Initialize movement driver
   robot.begin();
@@ -184,7 +189,12 @@ void setup() {
   // Start in standby mode
   robot.standby();
   Serial.println("Robot initialized in standby mode");
-  Serial.println("Setup Complete");
+  Serial.println("Setup Complete!");
+  Serial.print("\nConnect to SSID: ");
+  Serial.print(ssid);
+  Serial.print(" with password: ");
+  Serial.print(password);
+  Serial.print(" to control the robot\n");
 }
 
 // MAIN LOOP
@@ -288,3 +298,4 @@ void loop() {
   // Always update robot movements in main loop
   robot.update();
 }
+
