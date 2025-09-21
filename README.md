@@ -136,9 +136,9 @@ Custom movements can be added to the 'add_control' projects but we don't have ac
 
 ## 💡 Future Plans
 
-There are 2 additional (empty) pins available on the header board - A0 & D3.
-
-I'd like to use these pins or unused pins on the ESP8266 itself to drive a 0.96inch OLED I2C display and 3D print a mouning solution.
+- Use a ServoEasing library for smoother servo movements.
+- There are 2 additional (empty) pins available on the header board - A0 & D3.
+  - I'd like to use these pins or unused pins on the ESP8266 itself to drive a 0.96inch OLED I2C display and 3D print a mouning solution.
 
 ## 📄 License
 
