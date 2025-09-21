@@ -4,7 +4,7 @@
  * This file manages servo initialization, movement sequencing, and 
  * state transitions using a non-blocking update loop.
  * 
- * Implementation:
+ * IMPLEMENTATION:
  * - Defines arrays of servo positions for each movement type:
  *   - standby (1 step)
  *   - ready (1 step)
