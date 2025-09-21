@@ -30,23 +30,23 @@
 
 // STATE ENUMS
 enum MovementState {
-  STANDBY,
-  READY,
-  FORWARD,
-  BACKWARD,
-  TURN_LEFT,
-  TURN_RIGHT,
-  MOVE_LEFT,
-  MOVE_RIGHT,
-  WAVE_HELLO,
-  DANCE1,
-  DANCE2,
-  DANCE3,
-  LIE_DOWN,
-  FIGHTING,
-  PUSH_UPS,
-  SLEEP,
-  IDLE
+  STANDBY,      // Neutral resting position
+  READY,        // Ready to move position
+  FORWARD,      // Walk forward
+  BACKWARD,     // Walk backward
+  TURN_LEFT,    // Turn left
+  TURN_RIGHT,   // Turn right
+  MOVE_LEFT,    // Step sideways left
+  MOVE_RIGHT,   // Step sideways right
+  WAVE_HELLO,   // Wave hello
+  DANCE1,       // Dance routine 1
+  DANCE2,       // Dance routine 2
+  DANCE3,       // Dance routine 3
+  LIE_DOWN,     // Lie down
+  FIGHTING,     // Fighting pose
+  PUSH_UPS,     // Do push-ups
+  SLEEP,        // Sleep position
+  IDLE          // Doing nothing (waiting)
 };
 
 // STRUCTS
@@ -90,13 +90,13 @@ class MovementDriver {
     static const MovementArray sequences[17];   // number of sequences (states)
 
     // Movement state management
-    MovementState lastState;
-    MovementState currentState;
-    MovementState nextState;
-    int currentStep;
-    unsigned long stepStartTime;
-    bool isMoving;
-    unsigned long idleDuration;
+    MovementState lastState;        // Previous state
+    MovementState currentState;     // Current state
+    MovementState nextState;        // Next state to run
+    int currentStep;                // Current step in sequence
+    unsigned long stepStartTime;    // When current step started
+    bool isMoving;                  // True if currently moving
+    unsigned long idleDuration;     // How long to stay idle
 
     // Helper methods
     void setServoPositions(const int positions[]);
@@ -104,7 +104,7 @@ class MovementDriver {
 
   public:
     MovementDriver();
-    void begin();
+    void begin();  // Initialize servos
     void update();
 
     // Movement commands
@@ -126,10 +126,11 @@ class MovementDriver {
     void sleep();
     void idle(unsigned long duration, MovementState queuedState = IDLE);
 
-    // State info
+    // State information
     MovementState getState() const { return currentState; }
     MovementState getLastState() const { return lastState; }
 
+    // Check if robot is currently moving
     bool isBusy();
 };
 
