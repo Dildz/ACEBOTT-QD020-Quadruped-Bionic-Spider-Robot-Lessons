@@ -2,7 +2,7 @@
 
 All ACEBOTT QD020 Quadruped Bionic Spider Robot Arduino IDE lessons reworked for VSCode & PlatformIO. The original .ino lesson files are included for reference.
 
-Follow the PDF instruction documentation for assembling the robot, installing the driver software & following along with the lessons.
+Follow the [ACEBOTT Quadruped Bionic Spider Robot v1.7 instruction PDF](ACEBOTT%20Quadruped%20Bionic%20Spider%20Robot%20v1.7.pdf) for assembling the robot, installing the driver software & following along with the lessons.
 
 ## 📝 Initial Notes
 - During the build process, use the 1.3_zero_0 project to calibrate your robot's zero positions as these will differ from build to build due to mechanical differences. As a result, all the position array values will need to be adjusted based off of the calibrated values.
