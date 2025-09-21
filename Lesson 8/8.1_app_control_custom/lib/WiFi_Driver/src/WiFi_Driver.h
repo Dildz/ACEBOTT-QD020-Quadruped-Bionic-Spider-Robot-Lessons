@@ -31,33 +31,34 @@
 // CLASSES
 class WiFiDriver {
   public:
-    struct CommandData {  // Holds parsed command data extracted from incoming messages
-      int action;         // Main command action (e.g., CMD_RUN, CMD_STANDBY)
-      int device;         // Device identifier
-      int movementType;   // Movement type (for CMD_RUN commands)
-      bool isValid;       // Whether the command is valid
+    // This structure holds the command information we get from the app
+    struct CommandData {  
+      int action;         // What to do (e.g., move forward, dance)
+      int device;         // Which device (for future use, like lights)
+      int movementType;   // How to move (for movement commands)
+      bool isValid;       // True if this is a real, complete command
     };
 
-    // Public methods
-    void begin(const char* ssid, const char* password);
-    CommandData handleClient();
-    void sendData(byte* data, size_t len);
-    bool isClientConnected();
+    // Public methods - these are the main functions you can use
+    void begin(const char* ssid, const char* password);  // Start Wi-Fi
+    CommandData handleClient();                          // Check for new commands
+    void sendData(byte* data, size_t len);               // Send data back to app
+    bool isClientConnected();                            // Check if app is connected
 
   private:
-    // Network objects
+    // Network setup - server runs on port 100
     WiFiServer server = WiFiServer(100);
     WiFiClient client;
 
-    // Communication variables for parsing incoming data
-    byte dataLength = 0;
-    byte bufferIndex = 0;
-    char receiveBuffer[52];
-    unsigned char previousChar = 0;
-    bool isStartReceiving = false;
-    bool isStandbyTriggered = false;
+    // Variables for reading and understanding incoming data
+    byte dataLength = 0;                // How long the message should be
+    byte bufferIndex = 0;               // Where we are in the message
+    char receiveBuffer[52];             // Where we store incoming data
+    unsigned char previousChar = 0;     // Remember previous character
+    bool isStartReceiving = false;      // True when we find start of message
+    bool isStandbyTriggered = false;    // True if standby command received
 
-    // Helper methods
+    // Helper methods (used internally)
     unsigned char readBuffer(int index);
     void writeBuffer(int index, unsigned char character);
     CommandData parseReceivedData();
