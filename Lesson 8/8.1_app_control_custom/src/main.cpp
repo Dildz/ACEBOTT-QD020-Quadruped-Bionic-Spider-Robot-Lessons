@@ -1,5 +1,12 @@
 /*
  * Reworked app control project making use of a custom Movement_Driver and a custom WiFi_Driver.
+ *
+ * HOW IT WORKS:
+ * - The robot starts up and creates its own Wi-Fi network
+ * - It waits for a device to connect and sends movement commands via the control app
+ * - When a command arrives, it figures out which movement to run, tells the movement system
+ *   to perform the requested action and sends a response back to the control app
+ * - The update() function keeps the movements smooth and continuous
  */
 
 
@@ -9,16 +16,16 @@
 #include "WiFi_Driver.h"
 
 // DEFINES
-#define CMD_RUN       1
-#define CMD_STANDBY   3
-#define CMD_SLEEP     5
-#define CMD_LIEDOWN   6
-#define CMD_WAVEHELLO 7
-#define CMD_PUSHUPS   8
-#define CMD_FIGHTING  9
-#define CMD_DANCE1    10
-#define CMD_DANCE2    11
-#define CMD_DANCE3    12
+#define CMD_RUN       1   // Movement command (walk, turn, etc.)
+#define CMD_STANDBY   3   // Go to standby position
+#define CMD_SLEEP     5   // Go to sleep position
+#define CMD_LIEDOWN   6   // Lie down
+#define CMD_WAVEHELLO 7   // Wave hello
+#define CMD_PUSHUPS   8   // Do push-ups
+#define CMD_FIGHTING  9   // Fighting pose
+#define CMD_DANCE1    10  // Dance routine 1
+#define CMD_DANCE2    11  // Dance routine 2
+#define CMD_DANCE3    12  // Dance routine 3
 
 // GLOBAL VARIABLES
 const char* ssid = "QuadBot";
@@ -28,7 +35,7 @@ const char* password = "12345678";
 MovementDriver robot;
 WiFiDriver wifi;
 
-// Command callback packages
+// Response messages to send back to the app - Format: {0xFF, 0x55, length, device, action}
 byte callbackForwardPackage[5]    =  {0xff, 0x55, 0x02, 0x01, 0x01};
 byte callbackBackPackage[5]       =  {0xff, 0x55, 0x02, 0x01, 0x02};
 byte callbackLeftMovePackage[5]   =  {0xff, 0x55, 0x02, 0x01, 0x03};
@@ -50,6 +57,7 @@ byte callbackDance3Package[5]     =  {0xff, 0x55, 0x02, 0x01, 0x0f};
 void setup() {
   Serial.begin(115200);
   delay(100);
+
   Serial.println("\n=================================================================");
   Serial.println("Starting ACEBOTT QD020 Quadruped Bionic Spider Robot App Control.");
   Serial.println("=================================================================");
@@ -69,14 +77,14 @@ void setup() {
 
 // MAIN LOOP
 void loop() {
-  // Check the Wi-Fi client for a new command
+  // Check the client for a new command
   WiFiDriver::CommandData cmd = wifi.handleClient();
 
-  // Process the received command
+  // If we received a valid command, process it
   if (cmd.isValid) {
     switch(cmd.action) {
       case CMD_RUN:
-        // Directional movement commands
+        // // Movement commands (walking, turning)
         switch(cmd.movementType) {
           case 0x01:
             robot.forward();
@@ -104,7 +112,8 @@ void loop() {
             break;
         }
         break;
-      // Action movement commands
+        
+      // Action commands (poses, dances)
       case CMD_STANDBY:
         robot.standby();
         wifi.sendData(callbackStandbyPackage, 5);
