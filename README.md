@@ -9,16 +9,6 @@ Follow the PDF instruction documentation for assembling the robot, installing th
 - Methods used in the 'expand' lessons have been modified in favour of non-blocking state machine logic.
 - In the custom app control project the code has been further reworked to make use of custom drivers for movement & Wi-Fi related functions.
 
-## 📋 Table of Contents
-- [Introduction](#introduction)
-- [Prerequisites](#prerequisites)
-- [Installation & Setup](#installation--setup)
-- [Lesson Projects](#lesson-projects)
-- [Project Structure](#project-structure)
-- [WiFi Control](#wifi-control)
-- [Movement Library](#movement-library)
-- [License](#license)
-
 ## 🤖 Introduction
 
 The [ACEBOTT QD020](https://acebott.com/product/qd020-bionic-spider-kit/) is a quadruped robot using an ESP8266 that you can program & control via Wi-Fi using the ACEBOTT smartphone app. This repository contains lessons that teach you how to:
