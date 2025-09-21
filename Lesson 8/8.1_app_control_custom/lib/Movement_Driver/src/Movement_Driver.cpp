@@ -266,23 +266,23 @@ const int MovementDriver::sleepArray[4][9] = {   // sleep movement positions arr
 
 // Sequeneces lookup table
 const MovementArray MovementDriver::sequences[17] = {
-  { standbyArray,   sizeof(standbyArray)    / sizeof(standbyArray[0])   },    // STANDBY
-  { readyArray,     sizeof(readyArray)      / sizeof(readyArray[0])     },    // READY
-  { forwardArray,   sizeof(forwardArray)    / sizeof(forwardArray[0])   },    // FORWARD
-  { backwardArray,  sizeof(backwardArray)   / sizeof(backwardArray[0])  },    // BACKWARD
-  { turnLeftArray,  sizeof(turnLeftArray)   / sizeof(turnLeftArray[0])  },    // TURN_LEFT
-  { turnRightArray, sizeof(turnRightArray)  / sizeof(turnRightArray[0]) },    // TURN_RIGHT
-  { moveLeftArray,  sizeof(moveLeftArray)   / sizeof(moveLeftArray[0])  },    // MOVE_LEFT
-  { moveRightArray, sizeof(moveRightArray)  / sizeof(moveRightArray[0]) },    // MOVE_RIGHT
-  { waveHelloArray, sizeof(waveHelloArray)  / sizeof(waveHelloArray[0]) },    // WAVE_HELLO
-  { dance1Array,    sizeof(dance1Array)     / sizeof(dance1Array[0])    },    // DANCE1
-  { dance2Array,    sizeof(dance2Array)     / sizeof(dance2Array[0])    },    // DANCE2
-  { dance3Array,    sizeof(dance3Array)     / sizeof(dance3Array[0])    },    // DANCE3
-  { lieDownArray,   sizeof(lieDownArray)    / sizeof(lieDownArray[0])   },    // LIE_DOWN
-  { fightingArray,  sizeof(fightingArray)   / sizeof(fightingArray[0])  },    // FIGHTING
-  { pushUpsArray,   sizeof(pushUpsArray)    / sizeof(pushUpsArray[0])   },    // PUSH_UPS
-  { sleepArray,     sizeof(sleepArray)      / sizeof(sleepArray[0])     },    // SLEEP
-  { nullptr, 0 }                                                              // IDLE
+  { standbyArray,   1 }, // STANDBY
+  { readyArray,     1 }, // READY
+  { forwardArray,   8 }, // FORWARD
+  { backwardArray,  8 }, // BACKWARD
+  { turnLeftArray,  9 }, // TURN_LEFT
+  { turnRightArray, 9 }, // TURN_RIGHT
+  { moveLeftArray,  5 }, // MOVE_LEFT
+  { moveRightArray, 5 }, // MOVE_RIGHT
+  { waveHelloArray, 12}, // WAVE_HELLO
+  { dance1Array,    9 }, // DANCE1
+  { dance2Array,    8 }, // DANCE2
+  { dance3Array,    16}, // DANCE3
+  { lieDownArray,   2 }, // LIE_DOWN
+  { fightingArray,  15}, // FIGHTING
+  { pushUpsArray,   21}, // PUSH_UPS
+  { sleepArray,     4 }, // SLEEP
+  { nullptr,        0 }  // IDLE
 };
 
 // CLASS IMPLEMENTATION
@@ -313,27 +313,29 @@ void MovementDriver::update() {
   if (currentState == IDLE) {
     if (millis() - stepStartTime >= idleDuration) {
       if (nextState != IDLE) {
-        startMovementSequence(nextState);
+        startMovementSequence(nextState);  // Start the next movement
         nextState = IDLE;
       }
     }
     return;
   }
-  
+
+  // If not currently moving, nothing to do
   if (!isMoving) return;
 
   unsigned long currentTime = millis();
   const MovementArray &seq = sequences[currentState];
-  unsigned long stepDuration = seq.steps[currentStep][8];
+  unsigned long stepDuration = seq.steps[currentStep][8];  // Get duration from array
 
+  // Check if it's time to move to the next step
   if (currentTime - stepStartTime >= stepDuration) {
     currentStep++;
 
+    // If we finished all steps in this movement
     if (currentStep >= seq.size) {
-      // Sequence finished
-      isMoving = false;
+      isMoving = false; // Movement complete
       
-      // If a nextState is queued, automatically start it.
+      // If another movement is waiting, start it
       if (nextState != IDLE) {
         startMovementSequence(nextState);
         nextState = IDLE;
@@ -341,7 +343,7 @@ void MovementDriver::update() {
       return;
     }
 
-    // Move to next step
+    // Move to next step - set new servo positions
     setServoPositions(seq.steps[currentStep]);
     stepStartTime = currentTime;
   }
@@ -361,26 +363,22 @@ void MovementDriver::setServoPositions(const int positions[]) {
 
 // Start a new movement sequence
 void MovementDriver::startMovementSequence(MovementState newState) {
-  // Block if robot is already moving
+  // If already moving, queue the next movement
   if (isMoving) {
-    // Only queue if it’s a different state
     if (newState != currentState) {
       nextState = newState;
     }
     return;
   }
 
-  // Save the previous state
+  // Save current state and set new state
   lastState = currentState;
-
-  // Set the new state and start time
   currentState = newState;
   stepStartTime = millis();
   isMoving = true;
+  currentStep = 0;  // Start from first step
 
-  // Start at the 1st step
-  currentStep = 0;
-
+  // Get the movement sequence and set initial positions
   const MovementArray &seq = sequences[currentState];
   setServoPositions(seq.steps[currentStep]);
 }
@@ -403,6 +401,7 @@ void MovementDriver::fighting()  { startMovementSequence(FIGHTING); }
 void MovementDriver::pushUps()   { startMovementSequence(PUSH_UPS); }
 void MovementDriver::sleep()     { startMovementSequence(SLEEP); }
 
+// Go idle for a certain time, then optionally start another movement
 void MovementDriver::idle(unsigned long duration, MovementState queuedState) {
   isMoving = false;
   currentState = IDLE;
@@ -411,6 +410,7 @@ void MovementDriver::idle(unsigned long duration, MovementState queuedState) {
   nextState = queuedState;
 }
 
+// Check if robot is currently moving
 bool MovementDriver::isBusy() {
   return isMoving;
 }
