@@ -18,7 +18,7 @@
  * - Automatically returns to standby if client disconnects
  */
 
- 
+
 // INCLUDES
 #include "WiFi_Driver.h"
 
@@ -36,31 +36,31 @@ WiFiDriver::CommandData WiFiDriver::parseReceivedData() {
   CommandData cmd;
   cmd.isValid = true;
   
-  // Extract command data from buffer
-  cmd.action = readBuffer(9);
-  cmd.device = readBuffer(10);
+  // Extract the important information from the message
+  cmd.action = readBuffer(9);        // What action to perform
+  cmd.device = readBuffer(10);       // Which device to control
   
-  // For movement commands, extract the movement type
-  if (cmd.action == 1) { // CMD_RUN
+  // For movement commands, get the specific movement type
+  if (cmd.action == 1) { // CMD_RUN - movement command
     cmd.movementType = readBuffer(12);
     
-    // Debug output for movement commands using Serial.print only
-    Serial.print("Received Movement Command: Action 0x");
+    // Show what we received in the Serial Monitor
+    Serial.print("Movement Command: Action 0x");
     Serial.print(cmd.action, HEX);
     Serial.print(", Device 0x");
     Serial.print(cmd.device, HEX);
     Serial.print(", MovementType 0x");
-    if (cmd.movementType < 0x10) Serial.print("0"); // Pad with leading zero
+    if (cmd.movementType < 0x10) Serial.print("0"); // Add leading zero for formatting
     Serial.println(cmd.movementType, HEX);
   }
   else {
-    cmd.movementType = 0;
+    cmd.movementType = 0; // Not a movement command
     
-    // Debug output for action commands using Serial.print only
-    Serial.print("Received Action Command: Action 0x");
+    // Show what we received in the Serial Monitor
+    Serial.print("Action Command: Action 0x");
     Serial.print(cmd.action, HEX);
     Serial.print(", Device 0x");
-    if (cmd.device < 0x10) Serial.print("0"); // Pad with leading zero
+    if (cmd.device < 0x10) Serial.print("0"); // Add leading zero for formatting
     Serial.println(cmd.device, HEX);
   }
   
@@ -71,11 +71,13 @@ WiFiDriver::CommandData WiFiDriver::parseReceivedData() {
 void WiFiDriver::begin(const char* ssid, const char* password) {
   Serial.println("\nInitializing Wi-Fi...");
   
+  // Set up as Access Point
   WiFi.mode(WIFI_AP);
   WiFi.softAP(ssid, password, 5);
   server.begin();
   delay(100);
-
+  
+  // Show connection information
   Serial.println("Wi-Fi AP ready and server started.");
   Serial.print("Connect to SSID: ");
   Serial.print(ssid);
@@ -105,7 +107,7 @@ WiFiDriver::CommandData WiFiDriver::handleClient() {
   // Process incoming data from connected client
   if (client && client.connected()) {
     unsigned long previousMillis = millis();
-    const unsigned long timeoutDuration = 3000;
+    const unsigned long timeoutDuration = 3000; // 3 second timeout
 
     while (client.available()) {
       previousMillis = millis();
@@ -116,7 +118,7 @@ WiFiDriver::CommandData WiFiDriver::handleClient() {
         isStandbyTriggered = true;
       }
 
-      // Protocol parsing
+      // Look for the special start sequence: 0xFF 0x55
       if (receivedChar == 0x55 && !isStartReceiving) {
         if (previousChar == 0xff) {
           bufferIndex = 1;
@@ -127,22 +129,24 @@ WiFiDriver::CommandData WiFiDriver::handleClient() {
         previousChar = receivedChar;
         if (isStartReceiving) {
           if (bufferIndex == 2) {
-            dataLength = receivedChar;
+            dataLength = receivedChar; // Second byte tells us how long the message is
           }
           else if (bufferIndex > 2) {
             dataLength--;
           }
-          writeBuffer(bufferIndex, receivedChar);
+          writeBuffer(bufferIndex, receivedChar); // Store the data
         }
       }
 
       bufferIndex++;
 
+      // Prevent buffer overflow
       if (bufferIndex > 120) {
         bufferIndex = 0;
         isStartReceiving = false;
       }
 
+      // If we received a complete message, figure out what it means
       if (isStartReceiving && dataLength == 0 && bufferIndex > 3) {
         cmd = parseReceivedData();
         isStartReceiving = false;
@@ -151,7 +155,7 @@ WiFiDriver::CommandData WiFiDriver::handleClient() {
       }
     }
 
-    // Handle timeout
+    // If we don't hear from the client for 3 seconds with a standby flag, go to standby
     if ((millis() - previousMillis) > timeoutDuration && client.available() == 0 && isStandbyTriggered == true) {
       client.stop();
       cmd.action = 3; // CMD_STANDBY
@@ -159,7 +163,7 @@ WiFiDriver::CommandData WiFiDriver::handleClient() {
       return cmd;
     }
 
-    // Check if client is still associated with AP
+    // If the client disconnects from Wi-Fi, go to standby
     if (WiFi.softAPgetStationNum() == 0) {
       client.stop();
       cmd.action = 3; // CMD_STANDBY
