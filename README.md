@@ -130,15 +130,14 @@ The movement library includes pre-programmed sequences for:
 - Push-ups and fighting
 - Sleeping and lying down
 
-Custom movements & actions can be easily created & added to any of the 'expand' projects. We can get creative with these projects to run our own moves routines & is where most of the learning happens. 
+Custom movements & actions can be easily created & added to any of the 'expand' projects. We can get creative with these projects to run our own movement routines & is where most of the learning happens. 
 
-Custom movements can be added to the 'add_control' projects but we don't have access to the control app source code to modify the names in the app.
+Custom movements can be added to the 'app_control' projects but we don't have access to the smartphone control app source code to modify the movement names in the app.
 
 ## 💡 Future Plans
 
 - Use a ServoEasing library for smoother servo movements.
-- There are 2 additional (empty) pins available on the header board - A0 & D3.
-  - I'd like to use these pins or unused pins on the ESP8266 itself to drive a 0.96inch OLED I2C display and 3D print a mouning solution.
+- I'd like to use unused pins on the ESP8266 itself to drive a 0.96inch OLED I2C display with a 3D printed mouning solution to display differemt animated eyes.
 
 ## 📄 License
 
