@@ -1,0 +1,10 @@
+{
+    "name": "Display_SSD1306",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "Adafruit GFX Library",
+            "version": "*"
+        }
+    ]
+}

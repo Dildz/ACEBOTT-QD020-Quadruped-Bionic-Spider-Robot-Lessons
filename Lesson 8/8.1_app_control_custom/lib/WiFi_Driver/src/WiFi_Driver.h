@@ -43,7 +43,8 @@ class WiFiDriver {
     void begin(const char* ssid, const char* password);  // Start Wi-Fi
     CommandData handleClient();                          // Check for new commands
     void sendData(byte* data, size_t len);               // Send data back to app
-    bool isClientConnected();                            // Check if app is connected
+    bool isClientConnected();                            // Check if TCP app client is connected
+    bool isStationConnected();                           // Check if any device is on the WiFi AP
 
   private:
     // Network setup - server runs on port 100

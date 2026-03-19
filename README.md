@@ -7,7 +7,7 @@ Follow the [ACEBOTT Quadruped Bionic Spider Robot v1.7 instruction PDF](ACEBOTT%
 ## 📝 Initial Notes
 - During the build process, use the 1.3_zero_0 project to calibrate your robot's zero positions as these will differ from build to build due to mechanical differences. As a result, all the position array values will need to be adjusted based off of the calibrated values.
 - Methods used in the 'expand' lessons have been modified in favour of non-blocking state machine logic.
-- In the custom app control project the code has been further reworked to make use of custom drivers for movement & Wi-Fi related functions.
+- In the custom app control project the code has been further reworked into a clean multi-driver architecture (Movement, WiFi, Display & EyeAnimations drivers) with non-blocking state machine logic, animated OLED robot eyes, and full app control integration.
 
 ## 🤖 Introduction
 
@@ -105,6 +105,26 @@ Feel free to change the SSID & password in the code if you wish.
 
 After connecting to the network, you can use the ACEBOTT control app to connect to the robot to send commands.
 
+## 🖥️ OLED Display (8.1_app_control_custom only)
+
+The custom project drives a 0.96" SSD1306 128×64 OLED display mounted on the robot, showing animated robot eyes that react to movement commands:
+
+- **WiFi credentials screen** — shown on boot until a device joins the robot's WiFi AP
+- **Animated eyes** — powered by the [FluxGarage RoboEyes](https://github.com/FluxGarage/RoboEyes) library; idle roaming, blinking, and mood changes
+- **Expression mapping** — each movement command triggers a matching eye expression (e.g. happy, angry, curious, tired)
+- **Custom bitmap animations** — pre-converted GIF animations (sad, sleep, love, curious, angry, wow) play for specific movements
+
+| Expression  | Triggered by         |
+|-------------|----------------------|
+| Angry       | Fighting             |
+| Love        | Wave hello, Dance 2  |
+| Wow         | Dance 1              |
+| Curious     | Push-ups, Dance 3    |
+| Sad         | Lie down             |
+| Sleep       | Sleep                |
+
+> **Hardware note:** SDA and SCL share the ESP8266 TX/RX pins (GPIO1/GPIO3), so serial monitoring is not available while the display is connected.
+
 ## 🦵 Movement Library
 
 The robot has 8 servos controlling its movement:
@@ -137,7 +157,7 @@ Custom movements can be added to the 'app_control' projects but we don't have ac
 ## 💡 Future Plans
 
 - Use a ServoEasing library for smoother servo movements.
-- I'd like to use unused pins on the ESP8266 itself to drive a 0.96inch OLED I2C display with a 3D printed mouning solution to display differemt animated eyes.
+- Design a 3D printed mounting solution for the OLED display.
 
 ## 📄 License
 

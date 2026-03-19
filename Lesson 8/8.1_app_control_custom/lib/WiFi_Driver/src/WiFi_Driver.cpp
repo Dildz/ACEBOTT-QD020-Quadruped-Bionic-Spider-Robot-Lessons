@@ -43,47 +43,20 @@ WiFiDriver::CommandData WiFiDriver::parseReceivedData() {
   // For movement commands, get the specific movement type
   if (cmd.action == 1) { // CMD_RUN - movement command
     cmd.movementType = readBuffer(12);
-    
-    // Show what we received in the Serial Monitor
-    Serial.print("Movement Command: Action 0x");
-    Serial.print(cmd.action, HEX);
-    Serial.print(", Device 0x");
-    Serial.print(cmd.device, HEX);
-    Serial.print(", MovementType 0x");
-    if (cmd.movementType < 0x10) Serial.print("0"); // Add leading zero for formatting
-    Serial.println(cmd.movementType, HEX);
   }
   else {
     cmd.movementType = 0; // Not a movement command
-    
-    // Show what we received in the Serial Monitor
-    Serial.print("Action Command: Action 0x");
-    Serial.print(cmd.action, HEX);
-    Serial.print(", Device 0x");
-    if (cmd.device < 0x10) Serial.print("0"); // Add leading zero for formatting
-    Serial.println(cmd.device, HEX);
   }
-  
   return cmd;
 }
 
 // PUBLIC METHODS
 void WiFiDriver::begin(const char* ssid, const char* password) {
-  Serial.println("\nInitializing Wi-Fi...");
-  
   // Set up as Access Point
   WiFi.mode(WIFI_AP);
   WiFi.softAP(ssid, password, 5);
   server.begin();
   delay(100);
-  
-  // Show connection information
-  Serial.println("Wi-Fi AP ready and server started.");
-  Serial.print("Connect to SSID: ");
-  Serial.print(ssid);
-  Serial.print(" with password: ");
-  Serial.print(password);
-  Serial.println(" to control the robot.");
 }
 
 WiFiDriver::CommandData WiFiDriver::handleClient() {
@@ -94,7 +67,6 @@ WiFiDriver::CommandData WiFiDriver::handleClient() {
   if (!client || !client.connected()) {
     client = server.accept();
     if (client) {
-      Serial.println("[Client connected]");
       // Reset state for new client
       bufferIndex = 0;
       isStartReceiving = false;
@@ -183,4 +155,8 @@ void WiFiDriver::sendData(byte* data, size_t len) {
 
 bool WiFiDriver::isClientConnected() {
   return client && client.connected();
+}
+
+bool WiFiDriver::isStationConnected() {
+  return WiFi.softAPgetStationNum() > 0;
 }

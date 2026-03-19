@@ -1,0 +1,25 @@
+{
+    "name": "FluxGarage RoboEyes",
+    "version": "1.1.1",
+    "description": "Draws smoothly animated robot eyes on OLED displays using Adafruit GFX primitives. Supports moods like happy, tired, and angry with automated animations.",
+    "keywords": "robot, eyes, animation, oled, display, adafruit-gfx",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/FluxGarage/RoboEyes"
+    },
+    "authors": [
+        {
+            "name": "Dennis Hoelscher",
+            "email": "dennis@fluxgarage.com",
+            "url": "https://www.fluxgarage.com"
+        }
+    ],
+    "frameworks": "arduino",
+    "platforms": "*",
+    "dependencies": [
+        {
+            "name": "Adafruit GFX Library",
+            "version": "*"
+        }
+    ]
+}
