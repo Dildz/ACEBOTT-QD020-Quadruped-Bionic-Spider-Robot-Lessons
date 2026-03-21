@@ -7,21 +7,21 @@
  *
  * HOW IT WORKS:
  *   1. Robot starts up, display shows WiFi credentials
- *   2. App connects to the robot's WiFi network
+ *   2. Connect device to the robot's WiFi network, open the app and connect to the robot
  *   3. App sends movement commands (walk, turn, dance, etc.)
  *   4. Robot moves AND its eyes change expression to match
- *   5. Everything runs without blocking so movements stay smooth
+ *   5. Everything runs one step at a time — no pausing the whole program
  *
- * DRIVER RESPONSIBILITIES:
+ * THE 4 DRIVERS (each handles one job):
  *   Movement_Driver  - controls the 8 servo motors
  *   WiFi_Driver      - manages the WiFi network and app connection
  *   EyeAnimations    - decides what expression the eyes should show
- *   DisplayDriver    - owns the OLED display and renders the eye animations
+ *   DisplayDriver    - owns the OLED display and draws the eye animations
  *
  * DISPLAY WIRING (I2C):
  *   There are no spare pins so the Rx & Tx pins are used for I2C communication with the display.
  *   SDA = RxD0 (GPIO3), SCL = TxD0 (GPIO1)
- *   Note: these pins are the serial pins, the serial monitor cannot be used with the display is connected.
+ *   Note: these are the serial pins, so the serial monitor can't be used while the display is connected.
  */
 
 
@@ -32,7 +32,7 @@
 #include "EyeAnimations_Driver.h"
 #include "Movement_Driver.h"
 
-// COMMAND IDs - match the control app protocol
+// COMMAND IDs - these numbers match what the control app sends
 #define CMD_RUN       1   // movement command (walk, turn, strafe)
 #define CMD_STANDBY   3   // go to standby position
 #define CMD_SLEEP     5   // go to sleep position
@@ -44,46 +44,40 @@
 #define CMD_DANCE2    11  // dance routine 2
 #define CMD_DANCE3    12  // dance routine 3
 
-// WIFI CREDENTIALS - app must connect to this network
+// WIFI CREDENTIALS - the controller app device must connect to this network
+// Change these to rename the robot's WiFi or set a different password
 const char* ssid     = "QuadBot";
 const char* password = "12345678";
 
-// DRIVER INSTANCES - each handles its own hardware/task independently
+// DRIVER INSTANCES - each handles its own hardware or task independently
 DisplayDriver  display(128, 64, &Wire, -1);  // width, height, I2C bus, reset pin
 MovementDriver robot;
 WiFiDriver     wifi;
 EyeAnimations  eyes;
 
-// WIFI CONNECTION STATE
-bool wasStationConnected = false;  // tracks AP station presence (not TCP client)
-
-// APP RESPONSE PACKETS - sent back to confirm each command was received
-// Format: {0xFF, 0x55, length, device, action}
-byte callbackForwardPackage[5]    = {0xff, 0x55, 0x02, 0x01, 0x01};
-byte callbackBackPackage[5]       = {0xff, 0x55, 0x02, 0x01, 0x02};
-byte callbackLeftMovePackage[5]   = {0xff, 0x55, 0x02, 0x01, 0x03};
-byte callbackRightMovePackage[5]  = {0xff, 0x55, 0x02, 0x01, 0x04};
-byte callbackTurnLeftPackage[5]   = {0xff, 0x55, 0x02, 0x01, 0x05};
-byte callbackTurnRightPackage[5]  = {0xff, 0x55, 0x02, 0x01, 0x06};
-byte callbackStandbyPackage[5]    = {0xff, 0x55, 0x02, 0x01, 0x07};
-byte callbackSleepPackage[5]      = {0xff, 0x55, 0x02, 0x01, 0x08};
-byte callbackLiePackage[5]        = {0xff, 0x55, 0x02, 0x01, 0x09};
-byte callbackHelloPackage[5]      = {0xff, 0x55, 0x02, 0x01, 0x0a};
-byte callbackPushupPackage[5]     = {0xff, 0x55, 0x02, 0x01, 0x0b};
-byte callbackFightingPackage[5]   = {0xff, 0x55, 0x02, 0x01, 0x0c};
-byte callbackDance1Package[5]     = {0xff, 0x55, 0x02, 0x01, 0x0d};
-byte callbackDance2Package[5]     = {0xff, 0x55, 0x02, 0x01, 0x0e};
-byte callbackDance3Package[5]     = {0xff, 0x55, 0x02, 0x01, 0x0f};
+// Remembers whether a phone was connected last loop so we can detect changes
+bool wasStationConnected = false;
 
 
-// SETUP
+// Sends a 5-byte confirmation back to the app so it knows we received the command.
+// The responseId tells the app which command was confirmed.
+void sendAck(byte responseId) {
+  byte packet[5] = {0xFF, 0x55, 0x02, 0x01, responseId};
+  wifi.sendData(packet, 5);
+}
+
+
+// SETUP - runs once when the robot powers on
 void setup() {
   // Seed the random number generator (used for idle eye roaming)
   randomSeed(analogRead(A0));
 
-  // Initialise servos and move to standby position
+  // Start the servos, fold legs in, and wait for the move to finish before proceeding.
+  // Spinning update() here lets the sequence timer expire and detach the servos
+  // before setup() continues — without this, servos hold position until loop() starts.
   robot.begin();
-  robot.standby();
+  robot.storage();
+  while (robot.isBusy()) { robot.update(); }
 
   // Start the robot's WiFi network
   wifi.begin(ssid, password);
@@ -94,27 +88,28 @@ void setup() {
 }
 
 
-// MAIN LOOP
+// MAIN LOOP - runs over and over as fast as possible
 void loop() {
 
   // --- CONNECTION CHECK ---
-  // Track AP station presence (phone on WiFi), not TCP client (app connected).
-  // Eyes start as soon as a device joins the AP; revert when the AP is empty.
+  // Watch for a device joining or leaving the robot's WiFi network.
+  // Eyes start as soon as a device connects; go back to the info screen when it disconnects.
   bool isStationConnected = wifi.isStationConnected();
   if (isStationConnected && !wasStationConnected) {
-    // Device joined the AP - start eye animations
-    display.beginEyes();  // initialise RoboEyes on the display
+    // A device just connected - unfold to standby and start the eye animations
+    robot.standby();
+    display.beginEyes();  // set up RoboEyes on the display
     eyes.begin();         // set initial eye expression (standby)
   }
   else if (!isStationConnected && wasStationConnected) {
-    // Device left the AP - return to standby and show WiFi credentials
-    robot.standby();
+    // The device just disconnected - fold legs in and show WiFi info
+    robot.storage();
     display.showWiFiInfo();
   }
   wasStationConnected = isStationConnected;
 
   // --- COMMAND HANDLING ---
-  // Check for an incoming command from the app
+  // Check if the app sent a command this loop
   WiFiDriver::CommandData cmd = wifi.handleClient();
 
   if (cmd.isValid) {
@@ -125,32 +120,32 @@ void loop() {
           case 0x01:
             robot.forward();
             eyes.setMovementState(FORWARD);
-            wifi.sendData(callbackForwardPackage, 5);
+            sendAck(0x01);  // forward
             break;
           case 0x02:
             robot.backward();
             eyes.setMovementState(BACKWARD);
-            wifi.sendData(callbackBackPackage, 5);
+            sendAck(0x02);  // backward
             break;
           case 0x03:
             robot.moveLeft();
             eyes.setMovementState(MOVE_LEFT);
-            wifi.sendData(callbackLeftMovePackage, 5);
+            sendAck(0x03);  // move left
             break;
           case 0x04:
             robot.moveRight();
             eyes.setMovementState(MOVE_RIGHT);
-            wifi.sendData(callbackRightMovePackage, 5);
+            sendAck(0x04);  // move right
             break;
           case 0x05:
             robot.turnLeft();
             eyes.setMovementState(TURN_LEFT);
-            wifi.sendData(callbackTurnLeftPackage, 5);
+            sendAck(0x05);  // turn left
             break;
           case 0x06:
             robot.turnRight();
             eyes.setMovementState(TURN_RIGHT);
-            wifi.sendData(callbackTurnRightPackage, 5);
+            sendAck(0x06);  // turn right
             break;
         }
         break;
@@ -158,61 +153,61 @@ void loop() {
       case CMD_STANDBY:
         robot.standby();
         eyes.setMovementState(STANDBY);
-        wifi.sendData(callbackStandbyPackage, 5);
+        sendAck(0x07);  // standby
         break;
 
       case CMD_SLEEP:
         robot.sleep();
         eyes.setMovementState(SLEEP);
-        wifi.sendData(callbackSleepPackage, 5);
+        sendAck(0x08);  // sleep
         break;
 
       case CMD_LIEDOWN:
         robot.lieDown();
         eyes.setMovementState(LIE_DOWN);
-        wifi.sendData(callbackLiePackage, 5);
+        sendAck(0x09);  // lie down
         break;
 
       case CMD_WAVEHELLO:
         robot.waveHello();
         eyes.setMovementState(WAVE_HELLO);
-        wifi.sendData(callbackHelloPackage, 5);
+        sendAck(0x0a);  // wave hello
         break;
 
       case CMD_PUSHUPS:
         robot.pushUps();
         eyes.setMovementState(PUSH_UPS);
-        wifi.sendData(callbackPushupPackage, 5);
+        sendAck(0x0b);  // push-ups
         break;
 
       case CMD_FIGHTING:
         robot.fighting();
         eyes.setMovementState(FIGHTING);
-        wifi.sendData(callbackFightingPackage, 5);
+        sendAck(0x0c);  // fighting
         break;
 
       case CMD_DANCE1:
         robot.dance1();
         eyes.setMovementState(DANCE1);
-        wifi.sendData(callbackDance1Package, 5);
+        sendAck(0x0d);  // dance 1
         break;
 
       case CMD_DANCE2:
         robot.dance2();
         eyes.setMovementState(DANCE2);
-        wifi.sendData(callbackDance2Package, 5);
+        sendAck(0x0e);  // dance 2
         break;
 
       case CMD_DANCE3:
         robot.dance3();
         eyes.setMovementState(DANCE3);
-        wifi.sendData(callbackDance3Package, 5);
+        sendAck(0x0f);  // dance 3
         break;
     }
   }
 
   // --- IDLE EYE ROAMING ---
-  eyes.update();  // periodically shifts gaze direction during standby
+  eyes.update();  // occasionally shifts the gaze direction while the robot is standing still
 
   // --- EYE ANIMATION SYNC ---
   // When the movement state changes, tell the display what expression to show.
@@ -224,18 +219,17 @@ void loop() {
 
   // --- UPDATE ALL DRIVERS ---
   bool wasBusy = robot.isBusy();
-  robot.update();    // progress movement sequences (non-blocking step timing)
+  robot.update();    // advance the movement sequence one step at a time (no delays)
 
   // When a movement sequence finishes, return eyes to standby.
-  // Covers both directional moves (eyes back to center) and movement sets
-  // (custom bitmap animation stops). Guards against STANDBY/IDLE/READY
-  // completions which don't need a reset.
+  // Covers directional moves (eyes back to center) and special animations.
+  // Ignores STANDBY/IDLE/READY completions since they don't need a reset.
   if (wasBusy && !robot.isBusy()) {
     MovementState finished = robot.getState();
-    if (finished != STANDBY && finished != IDLE && finished != READY) {
+    if (finished != STANDBY && finished != IDLE && finished != READY && finished != STORAGE) {
       eyes.setMovementState(STANDBY);
     }
   }
 
-  display.update();  // render the current eye animation frame
+  display.update();  // draw the current eye animation frame to the screen
 }

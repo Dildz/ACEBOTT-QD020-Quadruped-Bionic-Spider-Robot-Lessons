@@ -1,23 +1,14 @@
 /*
- * WiFi_Driver.h - Custom library for managing ESP8266 Wi-Fi Access Point and client communication
- * 
- * This library provides an interface for setting up the robot as a Wi-Fi AP,
- * handling client connections, and parsing incoming command data.
- * 
- * IMPLEMENTATION:
- * - Sets up ESP8266 as Access Point with configurable SSID/password
- * - Listens for client connections on port 100
- * - Parses incoming data using a custom protocol format
- * - Extracts command data (action, device, movement type)
- * - Handles client timeouts and disconnections gracefully
- * 
- * PROTOCOL FORMAT:
- * - Commands start with 0xFF 0x55 preamble
- * - Second byte indicates data length
- * - Subsequent bytes contain command data:
- *   - Byte 9: Action (e.g., CMD_RUN, CMD_STANDBY)
- *   - Byte 10: Device identifier
- *   - Byte 12: Movement type (for CMD_RUN commands)
+ * WiFi_Driver.h - Manages the robot's Wi-Fi network and app connection
+ *
+ * INFRASTRUCTURE FILE — you don't need to change anything in here.
+ * This file handles all the WiFi networking. The robot uses it automatically.
+ *
+ * What it does:
+ * - Creates a WiFi access point (the network your phone connects to)
+ * - Listens for the control app on port 100
+ * - Reads and parses commands sent by the app
+ * - Sends confirmation packets back to the app
  */
 
 

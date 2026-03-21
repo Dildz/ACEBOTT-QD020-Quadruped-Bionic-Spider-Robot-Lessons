@@ -64,8 +64,30 @@
 // INCLUDES
 #include "Movement_Driver.h"
 
+
+// =============================================================================
+// HOW TO ADD YOUR OWN MOVEMENT
+// =============================================================================
+// Each movement is a list of steps. Each step sets all 8 servos and a wait time.
+// Column order:  URP  URA  LRA  LRP  ULP  ULA  LLA  LLP  wait(ms)
+//
+// Servo positions are in degrees (0-180). The wait time is in milliseconds.
+// 1000ms = 1 second.
+//
+// To add a new movement:
+//   1. Declare it in Movement_Driver.h (copy an existing line in the header).
+//   2. Add the array below - copy an existing one as a starting point.
+//   3. Register it in the sequences[] table near the bottom of this file.
+//   4. Add a public method at the bottom (e.g. void myMove() { startMovementSequence(MY_MOVE); })
+//   5. Add MY_MOVE to the MovementState enum in Movement_Driver.h.
+//
+// Experiment with small changes (5-10 degrees at a time) to understand
+// how each servo affects the robot's pose.
+// =============================================================================
+
+
 // MOVEMENT ARRAYS
-const int MovementDriver::standbyArray[1][9] = {    // standby postions array
+const int MovementDriver::standbyArray[1][9] = {    // standby positions array
 // URP---URA---LRA---LRP---ULP---ULA---LLA---LLP---MS
   { 80,  112,   70,   88,   95,   65,  100,   82,  1000}
 };
@@ -206,8 +228,8 @@ const int MovementDriver::dance3Array[16][9] = {   // dance routine 3 movement p
 
 const int MovementDriver::lieDownArray[2][9] = {    // lie down movement positions array
 // URP---URA---LRA---LRP---ULP---ULA---LLA---LLP---MS
-  {110,   90,   90,   70,   70,   90,   90,  110,  1000},  // lift paws
-  {100,  132,   50,   78,   75,   45,  120,   92,  1000},  // drop paws
+  {110,   90,   90,   70,   70,   90,   90,  110,  3000},  // lift paws
+  {100,  132,   50,   78,   75,   45,  120,   92,   100},  // return to ready position
 };
 
 const int MovementDriver::fightingArray[15][9] = {   // fighting movement positions array
@@ -262,10 +284,23 @@ const int MovementDriver::sleepArray[4][9] = {   // sleep movement positions arr
   {100,  132,   50,   78,   75,   45,  120,   92,  1000},  // step 4 - move arms out
 };
 
+const int MovementDriver::storageArray[1][9] = {   // storage/transport position
+// URP---URA---LRA---LRP---ULP---ULA---LLA---LLP---MS
+  {  0,  178,    2,  175,  177,    3,  170,    2,  1000},  // fold all legs in tight
+};
 
 
-// Sequeneces lookup table
-const MovementArray MovementDriver::sequences[17] = {
+
+// =============================================================================
+// ADD YOUR MOVEMENT HERE
+// =============================================================================
+// This table maps each MovementState to its array. Add a new line for any
+// movement you create. The order must match the MovementState enum in the header.
+// Format: { arrayName, numberOfSteps }
+// =============================================================================
+
+// Sequences lookup table
+const MovementArray MovementDriver::sequences[18] = {
   { standbyArray,   1 }, // STANDBY
   { readyArray,     1 }, // READY
   { forwardArray,   8 }, // FORWARD
@@ -282,6 +317,7 @@ const MovementArray MovementDriver::sequences[17] = {
   { fightingArray,  15}, // FIGHTING
   { pushUpsArray,   21}, // PUSH_UPS
   { sleepArray,     4 }, // SLEEP
+  { storageArray,   1 }, // STORAGE
   { nullptr,        0 }  // IDLE
 };
 
@@ -293,10 +329,11 @@ MovementDriver::MovementDriver() {
   currentStep = 0;
   stepStartTime = 0;
   isMoving = false;
+  servosAttached = false;
 }
 
-// Initialize all servos with their pulse width ranges 
-void MovementDriver::begin() {
+// Attach all servos with their pulse width ranges
+void MovementDriver::attachServos() {
   servoD5_URP.attach(D5, 500, 2500);
   servoD6_URA.attach(D6, 500, 2500);
   servoD7_LRA.attach(D7, 500, 2500);
@@ -305,6 +342,25 @@ void MovementDriver::begin() {
   servoD1_ULA.attach(D1, 500, 2500);
   servoD2_LLA.attach(D2, 500, 2500);
   servoD4_LLP.attach(D4, 500, 2500);
+  servosAttached = true;
+}
+
+// Detach all servos — releases torque so they can't stall against an obstacle
+void MovementDriver::detachServos() {
+  servoD5_URP.detach();
+  servoD6_URA.detach();
+  servoD7_LRA.detach();
+  servoD8_LRP.detach();
+  servoD0_ULP.detach();
+  servoD1_ULA.detach();
+  servoD2_LLA.detach();
+  servoD4_LLP.detach();
+  servosAttached = false;
+}
+
+// Initialize all servos
+void MovementDriver::begin() {
+  attachServos();
 }
 
 // Non-blocking update method - must be called in main loop
@@ -334,7 +390,12 @@ void MovementDriver::update() {
     // If we finished all steps in this movement
     if (currentStep >= seq.size) {
       isMoving = false; // Movement complete
-      
+
+      // Release servo torque after storage so they can't stall against an obstacle
+      if (currentState == STORAGE) {
+        detachServos();
+      }
+
       // If another movement is waiting, start it
       if (nextState != IDLE) {
         startMovementSequence(nextState);
@@ -371,6 +432,11 @@ void MovementDriver::startMovementSequence(MovementState newState) {
     return;
   }
 
+  // Re-attach servos if they were released after storage
+  if (!servosAttached) {
+    attachServos();
+  }
+
   // Save current state and set new state
   lastState = currentState;
   currentState = newState;
@@ -400,6 +466,7 @@ void MovementDriver::lieDown()   { startMovementSequence(LIE_DOWN); }
 void MovementDriver::fighting()  { startMovementSequence(FIGHTING); }
 void MovementDriver::pushUps()   { startMovementSequence(PUSH_UPS); }
 void MovementDriver::sleep()     { startMovementSequence(SLEEP); }
+void MovementDriver::storage()   { startMovementSequence(STORAGE); }
 
 // Go idle for a certain time, then optionally start another movement
 void MovementDriver::idle(unsigned long duration, MovementState queuedState) {

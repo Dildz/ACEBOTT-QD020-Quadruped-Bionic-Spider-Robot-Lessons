@@ -46,6 +46,7 @@ enum MovementState {
   FIGHTING,     // Fighting pose
   PUSH_UPS,     // Do push-ups
   SLEEP,        // Sleep position
+  STORAGE,      // Compact storage/transport position (legs folded in)
   IDLE          // Doing nothing (waiting)
 };
 
@@ -85,9 +86,10 @@ class MovementDriver {
     static const int fightingArray[15][9];
     static const int pushUpsArray[21][9];
     static const int sleepArray[4][9];
+    static const int storageArray[1][9];
 
     // Lookup table for all sequences
-    static const MovementArray sequences[17];   // number of sequences (states)
+    static const MovementArray sequences[18];   // number of sequences (states)
 
     // Movement state management
     MovementState lastState;        // Previous state
@@ -97,8 +99,11 @@ class MovementDriver {
     unsigned long stepStartTime;    // When current step started
     bool isMoving;                  // True if currently moving
     unsigned long idleDuration;     // How long to stay idle
+    bool servosAttached;            // True if servos are currently attached
 
     // Helper methods
+    void attachServos();
+    void detachServos();
     void setServoPositions(const int positions[]);
     void startMovementSequence(MovementState newState);
 
@@ -124,6 +129,7 @@ class MovementDriver {
     void fighting();
     void pushUps();
     void sleep();
+    void storage();
     void idle(unsigned long duration, MovementState queuedState = IDLE);
 
     // State information

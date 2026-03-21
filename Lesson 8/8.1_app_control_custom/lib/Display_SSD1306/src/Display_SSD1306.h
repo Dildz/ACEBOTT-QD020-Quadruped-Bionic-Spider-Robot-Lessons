@@ -1,17 +1,14 @@
 /*
  * Display_SSD1306.h - Owns and controls the SSD1306 OLED display
  *
- * This is the only library that touches the display hardware.
- * It owns both the Adafruit_SSD1306 driver and the RoboEyes animation engine.
+ * INFRASTRUCTURE FILE — you don't need to change anything in here.
+ * This file handles all the display drawing. The robot uses it automatically.
  *
- * RESPONSIBILITIES:
- * - Hardware init and startup screens (begin)
- * - Eye animation initialisation when a WiFi client connects (beginEyes)
- * - Applying eye expression states from EyeAnimations_Driver (applyEyeState)
- * - Driving the RoboEyes render loop each frame (update)
- *
- * NOTE: EyeAnimations_Driver.h is included only for the EyeState struct.
- *       DisplayDriver has no knowledge of the EyeAnimations class itself.
+ * What it does:
+ * - Initialises the OLED screen on startup
+ * - Shows the WiFi credentials screen while waiting for a connection
+ * - Draws the eye animations once the app connects
+ * - Switches between vector eyes (RoboEyes) and GIF-style bitmap animations
  */
 
 #ifndef DISPLAY_SSD1306_H

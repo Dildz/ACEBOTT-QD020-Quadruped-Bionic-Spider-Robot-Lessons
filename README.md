@@ -105,6 +105,8 @@ Feel free to change the SSID & password in the code if you wish.
 
 After connecting to the network, you can use the ACEBOTT control app to connect to the robot to send commands.
 
+> **Note (8.1_app_control_custom):** The robot runs its storage (leg-fold) sequence on boot and whenever a device disconnects from its WiFi. After the 1-second fold completes, all servos are automatically detached so they can't hold torque against an obstacle. During that 1-second window the servos are still driving — **make sure all legs/paws are clear before powering on or disconnecting.** Servos re-attach automatically when a device connects.
+
 ## 🖥️ OLED Display (8.1_app_control_custom only)
 
 The custom project drives a 0.96" SSD1306 128×64 OLED display mounted on the robot, showing animated robot eyes that react to movement commands:

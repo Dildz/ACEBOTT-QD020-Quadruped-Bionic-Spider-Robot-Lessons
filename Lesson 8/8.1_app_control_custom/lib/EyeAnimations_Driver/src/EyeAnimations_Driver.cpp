@@ -101,6 +101,33 @@ void EyeAnimations::update() {
 
 // --- Expression mapping table ---
 
+// =============================================================================
+// HOW TO CHANGE EYE EXPRESSIONS
+// =============================================================================
+// Find the movement you want below and change the settings.
+// You can also add a new case to create an expression for a new movement.
+//
+// mood:       EYES_DEFAULT  (normal)
+//             EYES_TIRED    (droopy)
+//             EYES_ANGRY    (angry brow)
+//             EYES_HAPPY    (happy/curved)
+//
+// position:   EYES_CENTER   (looking forward)
+//             EYES_N        (looking up)
+//             EYES_S        (looking down)
+//             EYES_E        (looking right)
+//             EYES_W        (looking left)
+//
+// autoblink:  true = eyes blink automatically, false = eyes stay open
+//
+// curious:    true = one eye slightly bigger (curious tilt look)
+//
+// customAnim: plays a GIF animation instead of the vector eyes above.
+//             Options: CUSTOM_ANIM_LOVE, CUSTOM_ANIM_ANGRY, CUSTOM_ANIM_SAD,
+//                      CUSTOM_ANIM_SLEEP, CUSTOM_ANIM_WOW, CUSTOM_ANIM_CURIOUS
+//             (set customAnim = 0 to use the vector eyes instead)
+// =============================================================================
+
 void EyeAnimations::applyStateExpression(MovementState state) {
   _currentState = EyeState();  // reset all fields to defaults first
 
