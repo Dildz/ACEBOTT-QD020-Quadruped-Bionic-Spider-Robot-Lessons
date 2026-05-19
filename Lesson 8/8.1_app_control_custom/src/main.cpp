@@ -67,6 +67,63 @@ void sendAck(byte responseId) {
 }
 
 
+// =============================================================================
+// COMMAND HANDLER TABLE
+// =============================================================================
+// Each row links one command from the app to: the robot move it should run,
+// the eye expression to show, and the ack byte to send back.
+//
+// For CMD_RUN (movement commands), the app also sends a "movement type" byte
+// to pick between forward/backward/turn/etc. - that's the subAction column.
+// For all other commands subAction is unused (set to 0).
+//
+// To add a new command: define a new CMD_* number above, then add one row here.
+// =============================================================================
+struct CommandHandler {
+  uint8_t                 action;     // top-level command id (CMD_*)
+  uint8_t                 subAction;  // movement type (only used for CMD_RUN)
+  void (MovementDriver::* move)();    // robot method to call
+  MovementState           eyeState;   // eye expression that goes with the move
+  uint8_t                 ackByte;    // the byte the app expects in the reply
+};
+
+static const CommandHandler handlers[] = {
+  // CMD_RUN movement variants - matched on both action AND subAction
+  { CMD_RUN,       0x01, &MovementDriver::forward,   FORWARD,    0x01 },
+  { CMD_RUN,       0x02, &MovementDriver::backward,  BACKWARD,   0x02 },
+  { CMD_RUN,       0x03, &MovementDriver::moveLeft,  MOVE_LEFT,  0x03 },
+  { CMD_RUN,       0x04, &MovementDriver::moveRight, MOVE_RIGHT, 0x04 },
+  { CMD_RUN,       0x05, &MovementDriver::turnLeft,  TURN_LEFT,  0x05 },
+  { CMD_RUN,       0x06, &MovementDriver::turnRight, TURN_RIGHT, 0x06 },
+  // Standalone commands - matched on action only
+  { CMD_STANDBY,   0,    &MovementDriver::standby,   STANDBY,    0x07 },
+  { CMD_SLEEP,     0,    &MovementDriver::sleep,     SLEEP,      0x08 },
+  { CMD_LIEDOWN,   0,    &MovementDriver::lieDown,   LIE_DOWN,   0x09 },
+  { CMD_WAVEHELLO, 0,    &MovementDriver::waveHello, WAVE_HELLO, 0x0a },
+  { CMD_PUSHUPS,   0,    &MovementDriver::pushUps,   PUSH_UPS,   0x0b },
+  { CMD_FIGHTING,  0,    &MovementDriver::fighting,  FIGHTING,   0x0c },
+  { CMD_DANCE1,    0,    &MovementDriver::dance1,    DANCE1,     0x0d },
+  { CMD_DANCE2,    0,    &MovementDriver::dance2,    DANCE2,     0x0e },
+  { CMD_DANCE3,    0,    &MovementDriver::dance3,    DANCE3,     0x0f },
+};
+static const size_t handlerCount = sizeof(handlers) / sizeof(handlers[0]);
+
+
+// Look up the incoming command in the handlers table and run it.
+// Unknown commands are silently ignored.
+static void dispatchCommand(const WiFiDriver::CommandData& cmd) {
+  for (size_t i = 0; i < handlerCount; ++i) {
+    const CommandHandler& h = handlers[i];
+    if (h.action != cmd.action) continue;
+    if (cmd.action == CMD_RUN && h.subAction != cmd.movementType) continue;
+    (robot.*h.move)();
+    eyes.setMovementState(h.eyeState);
+    sendAck(h.ackByte);
+    return;
+  }
+}
+
+
 // SETUP - runs once when the robot powers on
 void setup() {
   // Seed the random number generator (used for idle eye roaming)
@@ -109,101 +166,10 @@ void loop() {
   wasStationConnected = isStationConnected;
 
   // --- COMMAND HANDLING ---
-  // Check if the app sent a command this loop
+  // Check if the app sent a command this loop, then dispatch via the handler table.
   WiFiDriver::CommandData cmd = wifi.handleClient();
-
   if (cmd.isValid) {
-    switch (cmd.action) {
-
-      case CMD_RUN:  // movement commands - walk, turn, strafe
-        switch (cmd.movementType) {
-          case 0x01:
-            robot.forward();
-            eyes.setMovementState(FORWARD);
-            sendAck(0x01);  // forward
-            break;
-          case 0x02:
-            robot.backward();
-            eyes.setMovementState(BACKWARD);
-            sendAck(0x02);  // backward
-            break;
-          case 0x03:
-            robot.moveLeft();
-            eyes.setMovementState(MOVE_LEFT);
-            sendAck(0x03);  // move left
-            break;
-          case 0x04:
-            robot.moveRight();
-            eyes.setMovementState(MOVE_RIGHT);
-            sendAck(0x04);  // move right
-            break;
-          case 0x05:
-            robot.turnLeft();
-            eyes.setMovementState(TURN_LEFT);
-            sendAck(0x05);  // turn left
-            break;
-          case 0x06:
-            robot.turnRight();
-            eyes.setMovementState(TURN_RIGHT);
-            sendAck(0x06);  // turn right
-            break;
-        }
-        break;
-
-      case CMD_STANDBY:
-        robot.standby();
-        eyes.setMovementState(STANDBY);
-        sendAck(0x07);  // standby
-        break;
-
-      case CMD_SLEEP:
-        robot.sleep();
-        eyes.setMovementState(SLEEP);
-        sendAck(0x08);  // sleep
-        break;
-
-      case CMD_LIEDOWN:
-        robot.lieDown();
-        eyes.setMovementState(LIE_DOWN);
-        sendAck(0x09);  // lie down
-        break;
-
-      case CMD_WAVEHELLO:
-        robot.waveHello();
-        eyes.setMovementState(WAVE_HELLO);
-        sendAck(0x0a);  // wave hello
-        break;
-
-      case CMD_PUSHUPS:
-        robot.pushUps();
-        eyes.setMovementState(PUSH_UPS);
-        sendAck(0x0b);  // push-ups
-        break;
-
-      case CMD_FIGHTING:
-        robot.fighting();
-        eyes.setMovementState(FIGHTING);
-        sendAck(0x0c);  // fighting
-        break;
-
-      case CMD_DANCE1:
-        robot.dance1();
-        eyes.setMovementState(DANCE1);
-        sendAck(0x0d);  // dance 1
-        break;
-
-      case CMD_DANCE2:
-        robot.dance2();
-        eyes.setMovementState(DANCE2);
-        sendAck(0x0e);  // dance 2
-        break;
-
-      case CMD_DANCE3:
-        robot.dance3();
-        eyes.setMovementState(DANCE3);
-        sendAck(0x0f);  // dance 3
-        break;
-    }
+    dispatchCommand(cmd);
   }
 
   // --- IDLE EYE ROAMING ---
