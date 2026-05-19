@@ -42,18 +42,28 @@ class WiFiDriver {
     WiFiServer server = WiFiServer(100);
     WiFiClient client;
 
-    // Variables for reading and understanding incoming data
-    byte dataLength = 0;                // How long the message should be
-    byte bufferIndex = 0;               // Where we are in the message
-    char receiveBuffer[52];             // Where we store incoming data
-    unsigned char previousChar = 0;     // Remember previous character
-    bool isStartReceiving = false;      // True when we find start of message
-    bool isStandbyTriggered = false;    // True if standby command received
+    // --- Protocol parser state ---
+    // Packets from the app look like: 0xFF 0x55 <length> <body...>
+    // feedByte() walks one byte at a time through these states.
+    enum ParseState {
+      WAIT_FF,    // looking for the first preamble byte 0xFF
+      WAIT_55,    // saw 0xFF, looking for 0x55
+      WAIT_LEN,   // saw preamble, next byte is body length
+      READ_BODY,  // reading body bytes until done
+    };
 
-    // Helper methods (used internally)
-    unsigned char readBuffer(int index);
-    void writeBuffer(int index, unsigned char character);
-    CommandData parseReceivedData();
+    static const size_t BODY_BUF_SIZE = 32;  // ample for legit ACEBOTT commands
+
+    ParseState _parseState     = WAIT_FF;
+    uint8_t    _body[BODY_BUF_SIZE];
+    uint8_t    _bodyLen        = 0;     // total body bytes expected
+    uint8_t    _bodyPos        = 0;     // body bytes received so far
+    bool       _standbyTriggered = false;  // app sent the magic 0xC8 byte
+
+    // Returns true if `b` just completed a packet (caller then calls buildCommand()).
+    bool        feedByte(uint8_t b);
+    CommandData buildCommand();
+    void        resetParser();
 };
 
 #endif

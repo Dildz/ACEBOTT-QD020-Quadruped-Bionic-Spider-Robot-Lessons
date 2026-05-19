@@ -1,58 +1,111 @@
 /*
- * WiFi_Driver.cpp - Implementation of the WiFiDriver library
- * 
- * This file manages Wi-Fi AP setup, client connection handling,
- * and protocol parsing for incoming command data.
- * 
- * IMPLEMENTATION:
- * - begin(): Initializes Wi-Fi in AP mode with specified credentials
- * - handleClient(): Main loop for client connection management and data parsing
- * - parseReceivedData(): Extracts command data from received protocol packets
- * - sendData(): Sends data back to connected client
- * - isClientConnected(): Checks if client is still connected
- * 
- * PROTOCOL PARSING:
- * - Looks for 0xFF 0x55 preamble to start receiving
- * - Second byte indicates total data length
- * - Times out after 3 seconds of inactivity
- * - Automatically returns to standby if client disconnects
+ * WiFi_Driver.cpp - WiFi AP setup and ACEBOTT app protocol parser
+ *
+ * INFRASTRUCTURE FILE — you don't need to change anything in here.
+ * Starts the WiFi access point, accepts the app as a TCP client, and parses
+ * its wire protocol one byte at a time using a small state machine.
+ *
+ * WIRE PROTOCOL:
+ *   [0xFF] [0x55] [length] [body...]
+ *     where length = number of body bytes that follow.
+ *
+ * Body field positions (offsets WITHIN the body, after the header):
+ *   body[6]  = action  (CMD_* number)
+ *   body[7]  = device
+ *   body[9]  = movement type  (only meaningful when action == CMD_RUN)
+ *
+ * One special non-packet byte triggers an auto-standby on idle timeout:
+ *   0xC8 anywhere in the stream arms _standbyTriggered. If the client then
+ *   goes quiet for 3 seconds, we synthesise a standby command.
  */
 
-
-// INCLUDES
 #include "WiFi_Driver.h"
 
-// HELPER METHODS
-unsigned char WiFiDriver::readBuffer(int index) {
-  return receiveBuffer[index];
+
+// Action codes the parser needs to know about. These mirror the CMD_*
+// numbers in main.cpp; duplicated here to keep this file self-contained.
+static const uint8_t ACTION_RUN     = 1;
+static const uint8_t ACTION_STANDBY = 3;  // synthesised on idle timeout / disconnect
+
+// Special non-packet marker byte. When the stream goes quiet and we last
+// saw this byte, we synthesise a standby command (legacy ACEBOTT behaviour).
+static const uint8_t STANDBY_TRIGGER_BYTE = 0xC8;  // 200 decimal
+
+// Body field offsets - positions WITHIN the body (after the 0xFF 0x55 LEN header).
+static const size_t BODY_OFFSET_ACTION   = 6;
+static const size_t BODY_OFFSET_DEVICE   = 7;
+static const size_t BODY_OFFSET_MOVEMENT = 9;
+
+// How long the client can go quiet before we treat them as gone.
+static const unsigned long CLIENT_TIMEOUT_MS = 3000;
+
+
+// --- PARSER ---
+
+void WiFiDriver::resetParser() {
+  _parseState = WAIT_FF;
+  _bodyLen    = 0;
+  _bodyPos    = 0;
 }
 
-void WiFiDriver::writeBuffer(int index, unsigned char character) {
-  receiveBuffer[index] = character;
+bool WiFiDriver::feedByte(uint8_t b) {
+  // Side-channel: any 0xC8 byte in the stream arms the auto-standby behaviour
+  // that fires on the next idle timeout. Any other byte disarms it.
+  _standbyTriggered = (b == STANDBY_TRIGGER_BYTE);
+
+  switch (_parseState) {
+    case WAIT_FF:
+      if (b == 0xFF) _parseState = WAIT_55;
+      return false;
+
+    case WAIT_55:
+      if (b == 0x55) {
+        _parseState = WAIT_LEN;
+      } else if (b != 0xFF) {
+        // Anything else aborts the preamble. Another 0xFF keeps us here.
+        _parseState = WAIT_FF;
+      }
+      return false;
+
+    case WAIT_LEN:
+      _bodyLen = b;
+      _bodyPos = 0;
+      // Refuse a length we can't store (also handles length = 0).
+      if (_bodyLen == 0 || _bodyLen > BODY_BUF_SIZE) {
+        resetParser();
+        return false;
+      }
+      _parseState = READ_BODY;
+      return false;
+
+    case READ_BODY:
+      _body[_bodyPos++] = b;
+      if (_bodyPos >= _bodyLen) {
+        // Full body received — caller can pull the command out now.
+        _parseState = WAIT_FF;
+        return true;
+      }
+      return false;
+  }
+  return false;  // unreachable
 }
 
-WiFiDriver::CommandData WiFiDriver::parseReceivedData() {
-  isStartReceiving = false;
+WiFiDriver::CommandData WiFiDriver::buildCommand() {
   CommandData cmd;
   cmd.isValid = true;
-  
-  // Extract the important information from the message
-  cmd.action = readBuffer(9);        // What action to perform
-  cmd.device = readBuffer(10);       // Which device to control
-  
-  // For movement commands, get the specific movement type
-  if (cmd.action == 1) { // CMD_RUN - movement command
-    cmd.movementType = readBuffer(12);
-  }
-  else {
-    cmd.movementType = 0; // Not a movement command
-  }
+  cmd.action  = (_bodyPos > BODY_OFFSET_ACTION) ? _body[BODY_OFFSET_ACTION] : 0;
+  cmd.device  = (_bodyPos > BODY_OFFSET_DEVICE) ? _body[BODY_OFFSET_DEVICE] : 0;
+  cmd.movementType =
+      (cmd.action == ACTION_RUN && _bodyPos > BODY_OFFSET_MOVEMENT)
+          ? _body[BODY_OFFSET_MOVEMENT]
+          : 0;
   return cmd;
 }
 
-// PUBLIC METHODS
+
+// --- PUBLIC METHODS ---
+
 void WiFiDriver::begin(const char* ssid, const char* password) {
-  // Set up as Access Point
   WiFi.mode(WIFI_AP);
   WiFi.softAP(ssid, password, 5);
   server.begin();
@@ -63,82 +116,44 @@ WiFiDriver::CommandData WiFiDriver::handleClient() {
   CommandData cmd;
   cmd.isValid = false;
 
-  // Check for new client connection
+  // Accept a new client if none is currently connected.
   if (!client || !client.connected()) {
     client = server.accept();
     if (client) {
-      // Reset state for new client
-      bufferIndex = 0;
-      isStartReceiving = false;
-      dataLength = 0;
-      previousChar = 0;
-      isStandbyTriggered = false;
+      resetParser();
+      _standbyTriggered = false;
     }
   }
 
-  // Process incoming data from connected client
   if (client && client.connected()) {
-    unsigned long previousMillis = millis();
-    const unsigned long timeoutDuration = 3000; // 3 second timeout
+    unsigned long lastActivity = millis();
 
+    // Drain whatever bytes are queued right now.
     while (client.available()) {
-      previousMillis = millis();
-      unsigned char receivedChar = client.read() & 0xff;
-      
-      isStandbyTriggered = false;
-      if (receivedChar == 200) {
-        isStandbyTriggered = true;
-      }
+      lastActivity = millis();
+      uint8_t b = client.read() & 0xff;
 
-      // Look for the special start sequence: 0xFF 0x55
-      if (receivedChar == 0x55 && !isStartReceiving) {
-        if (previousChar == 0xff) {
-          bufferIndex = 1;
-          isStartReceiving = true;
-        }
-      }
-      else {
-        previousChar = receivedChar;
-        if (isStartReceiving) {
-          if (bufferIndex == 2) {
-            dataLength = receivedChar; // Second byte tells us how long the message is
-          }
-          else if (bufferIndex > 2) {
-            dataLength--;
-          }
-          writeBuffer(bufferIndex, receivedChar); // Store the data
-        }
-      }
-
-      bufferIndex++;
-
-      // Prevent buffer overflow
-      if (bufferIndex > 120) {
-        bufferIndex = 0;
-        isStartReceiving = false;
-      }
-
-      // If we received a complete message, figure out what it means
-      if (isStartReceiving && dataLength == 0 && bufferIndex > 3) {
-        cmd = parseReceivedData();
-        isStartReceiving = false;
-        bufferIndex = 0;
-        return cmd;
+      if (feedByte(b)) {
+        // Complete packet — return its command and stop draining.
+        return buildCommand();
       }
     }
 
-    // If we don't hear from the client for 3 seconds with a standby flag, go to standby
-    if ((millis() - previousMillis) > timeoutDuration && client.available() == 0 && isStandbyTriggered == true) {
+    // No complete packet this loop. If the client has gone quiet AND the
+    // last byte we saw was the standby-trigger marker, synthesise standby.
+    if ((millis() - lastActivity) > CLIENT_TIMEOUT_MS
+        && client.available() == 0
+        && _standbyTriggered) {
       client.stop();
-      cmd.action = 3; // CMD_STANDBY
+      cmd.action  = ACTION_STANDBY;
       cmd.isValid = true;
       return cmd;
     }
 
-    // If the client disconnects from Wi-Fi, go to standby
+    // If the AP has no stations left, the phone has dropped off entirely.
     if (WiFi.softAPgetStationNum() == 0) {
       client.stop();
-      cmd.action = 3; // CMD_STANDBY
+      cmd.action  = ACTION_STANDBY;
       cmd.isValid = true;
       return cmd;
     }
